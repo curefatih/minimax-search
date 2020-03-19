@@ -41,16 +41,16 @@ class GameTree:
         recursiveCreator(0, self.depth, self.root)
 
     def bestMove(self, localRoot: "Node", depth, maxDepth, isMaximizing):
-        result = self.__minimax(localRoot, depth, maxDepth, isMaximizing)
+        result = self.minimax(localRoot, depth, maxDepth, isMaximizing)
         print(result)
         return result.index(max(result) if isMaximizing else min(result))
 
-    def __minimax(self, localRoot: "Node", depth, maxDepth, isMaximizing):
+    def minimax(self, localRoot: "Node", depth, maxDepth, isMaximizing):
         local_root_points = [node.point for node in localRoot.nodes()]
         if (depth + 1 < maxDepth):
             for cn_index in range(len(localRoot.nodes())):
                 current_node = localRoot.nodes()[cn_index]
-                childPoints = self.__minimax(
+                childPoints = self.minimax(
                     current_node, depth + 1, maxDepth, not(isMaximizing))
                 child_best_move = max(childPoints) if not(
                     isMaximizing) else min(childPoints)
@@ -59,7 +59,7 @@ class GameTree:
                     child_best_move
         return local_root_points
 
-    def travel(self, path, node: "Node"):
+    def travel(self, path, node: "Node", depth):
         local_root = node
         for alpha in path:
             path_move = int(alpha)
@@ -68,19 +68,21 @@ class GameTree:
             else:
                 print("Daha fazla ilerlenebilir değil!")
                 break
-        self.showPoints(local_root)
+        self.showPoints(local_root, depth)
         return local_root
 
-    def showPoints(self, node: "Node"):
+    def showPoints(self, node: "Node", depth):
         print("\nŞuan içerinde bulunduğunuz Node'un puan değeri: ", node.point)
         if(len(node.nodes()) > 0):
-            print("Child node'ların puan değerleri: ", [x.point for x in node.nodes()])
-        print(self.__minimax(node, 0, self.depth, True))
-        print(self.__minimax(node, 0, self.depth, False))
+            print("Child node'ların puan değerleri: ",
+                  [x.point for x in node.nodes()])
+        print("minimax -max- değeri: ",self.minimax(node, depth, self.depth, True))
+        print("minimax -min- değeri: ",self.minimax(node, depth, self.depth, False))
         print()
 
+
 # main function
-# 
+#
 if __name__ == "__main__":
     gt = GameTree(5, 5)
 
@@ -93,46 +95,56 @@ if __name__ == "__main__":
                 printTree(node)
 
     # Game On
+    print("Oyun içi kazanılabilecek en yüksek puan ", max(gt.minimax(gt.root, 0, gt.depth, True)), "\n\n")
     maxMin = {
         1: True,
         -1: False
     }
+
+    point = 0
     moves = ""
     currentNode = gt.root
     currentApproachMaximizing = True
     for i in range(4):
-        bestMove = gt.bestMove(currentNode, i, gt.depth, maxMin[currentApproachMaximizing])
-        print("En iyi hamle: ", bestMove, " max mı? : ", maxMin[currentApproachMaximizing], "\n")
+        bestMove = gt.bestMove(currentNode, i, gt.depth,
+                               maxMin[currentApproachMaximizing])
+        print("En iyi hamle: ", bestMove, " max mı? : ",
+              maxMin[currentApproachMaximizing], "\n")
         moves = moves + str(bestMove)
-        currentApproachMaximizing = currentApproachMaximizing  * -1
+        currentApproachMaximizing = currentApproachMaximizing * -1
         currentNode = currentNode.nodes()[bestMove]
-    
-    print("Yapılan hamleler sıraysıla: ", moves, "\n")
+        point = point + currentNode.point
+
+    print("Yapılan hamleler sıraysıla: ", moves, "\n",
+        "Kazanılan puan :", point)
 
     # Travel for check
     local_root = gt.root
+    local_depth = 0
     while True:
         print("_______________________________________________")
         print("Node gezmek için: N\n" +
-            "Geçerli konumun değerlerini görmek için: S\n" +
-            "Sonlandırmak için: q\n")
-        inp=input(":")
+              "Geçerli konumun değerlerini görmek için: S\n" +
+              "Sonlandırmak için: q\n")
+        inp = input(":")
 
         if(inp == "q"):
             break
 
         if(inp == "N" or inp == "n"):
             print("-- Örneğin 123 -> iç içe olmak şartıyla 1, 2, 3 indexli değerlerin içerisine girer.\n root node' a dönmek için -1")
-            gt.showPoints(local_root)
+            gt.showPoints(local_root, local_depth)
             move_inp = input(":")
             if(move_inp == "-1"):
-                local_root= gt.root
+                local_root = gt.root
+                depth = 0
                 continue
 
             if not(str.isnumeric(move_inp)):
                 print("!! Girdi nümerik değerlerden oluşmalı")
                 continue
-            local_root= gt.travel(move_inp, local_root)
+            local_depth = local_depth + min(len(move_inp), gt.depth)
+            local_root = gt.travel(move_inp, local_root, local_depth)
 
         if(inp == "S" or inp == "s"):
-            gt.showPoints(local_root)
+            gt.showPoints(local_root, local_depth)
